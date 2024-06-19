@@ -5,13 +5,12 @@
 #
 
 # Name of this project
-name: github-action-typescript-template
+name: Create Branch from a Specific Tag
 
 # Tags of this project
 tags:
   - github-action
   - typescript
-  - template
 
 # Logo for this project
 #logo: docs/logo.png
@@ -20,13 +19,13 @@ tags:
 license: "APACHE2"
 
 # Canonical GitHub repo
-github_repo: cloudposse/github-action-typescript-template
+github_repo: cloudposse-github-actions/create-branch-from-tag
 
 # Badges to display
 badges:
   - name: "Latest Release"
-    image: "https://img.shields.io/github/release/cloudposse/github-action-typescript-template.svg"
-    url: "https://github.com/cloudposse/github-action-typescript-template/releases/latest"
+    image: "https://img.shields.io/github/release/cloudposse-github-actions/create-branch-from-tag.svg"
+    url: "https://github.com/cloudposse-github-actions/create-branch-from-tag/releases/latest"
   - name: "Slack Community"
     image: "https://slack.cloudposse.com/badge.svg"
     url: "https://slack.cloudposse.com"
@@ -34,25 +33,99 @@ badges:
 related: []
 
 # Short description of this project
-description: Template repo for GitHub Actions written in TypeScript
+description: This action creates a new branch from a specific tag.
 
 introduction: |-
-  This repo is a template for GitHub Actions written in TypeScript.
-references:
-  - name: "github-actions-workflows"
-    description: "Reusable workflows for different types of projects"
-    url: "https://github.com/cloudposse/github-actions-workflows"
-  - name: "example-github-action-release-workflow"
-    description: "Example application with complicated release workflow"
-    url: "https://github.com/cloudposse/example-github-action-release-workflow"
+    This action creates a new branch from a specific tag.
+    
+    This is a fork of [satya-500's create a branch from a tag action](https://github.com/satya-500/create-branch-from-tag)
+  
+#references:
+#  - name: "github-actions-workflows"
+#    description: "Reusable workflows for different types of projects"
+#    url: "https://github.com/cloudposse/github-actions-workflows"
+#  - name: "example-github-action-release-workflow"
+#    description: "Example application with complicated release workflow"
+#    url: "https://github.com/cloudposse/example-github-action-release-workflow"
 
 # How to use this project
 usage: |
-  Use this repository as a template in your own GitHub Action project to get started.
 
-include:
+  create branch from tag
+    ```yaml
+    - name: creating rc branch
+      uses: cloudposse-github-actions/create-branch-from-tag@v1.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        branch: release
+        tag: tags/v0.0.7
+    ```
+    
+    create branch from specific ref (branch)
+    ```yaml
+    - name: creating rc branch
+      uses: cloudposse-github-actions/create-branch-from-tag@v1.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        branch: release
+        tag: test
+    ```
 
-# Contributors to this project
-contributors:
-  - name: "Matt Calhoun"
-    github: "mcalhoun"
+    Full Job Example (Workflow Dispatch as a shared reusable workflow)
+    ```yaml
+    on:
+      workflow_call:
+        inputs:
+          runs-on:
+            description: "The runner labels on which jobs should run on"
+            required: false
+            type: string
+            default: '["self-hosted"]'
+          organization:
+            description: "Repository owner organization (e.g. 'acme' for repo acme/example)"
+            required: true
+            type: string
+          repository:
+            description: "Repository name (e.g. 'example' for repo acme/example)"
+            required: true
+            type: string
+          tag:
+            description: "The semantic version tag of the release (e.g. 'v1.1.0')"
+            required: true
+            type: string
+        outputs:
+          branch-name:
+            description: "Branch name"
+            value: ${{ jobs.create-branch.outputs.branch-name }}
+    
+    permissions:
+      id-token: write
+      contents: write 
+
+    jobs:
+      create-branch:
+        name: build
+        runs-on: ${{ fromJSON(inputs.runs-on) }}
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+      
+          - name: Parse Semver
+            id: parse-semver
+            uses: booxmedialtd/ws-action-parse-semver@v1
+            with:
+              input_string: ${{ inputs.tag }}
+    
+          - name: Create Release Branch 
+            uses: cloudposse-github-actions/create-branch-from-tag@main
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              # The following can easily just be 'release/${{ inputs.tag }}', however it is left as is
+              # in case the tag needs to be manipulated. For example:
+              # 'release/${{ steps.parse-semver.outputs.major }}.${{ steps.parse-semver.outputs.minor }}.x'
+              branch: release/${{ steps.parse-semver.outputs.fullversion }}
+              from: tags/${{ inputs.tag }}
+    ```
