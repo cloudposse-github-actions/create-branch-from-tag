@@ -31138,8 +31138,8 @@ var utils = __nccwpck_require__(3030);
 
 async function run() {
     try {
-        const branch = core.getInput('branch');
-        const from = core.getInput('from');
+        const branch = core.getInput("branch");
+        const from = core.getInput("from");
         core.debug(`Creating branch ${branch}`);
         await createBranch(utils.GitHub, lib_github.context, branch, from);
     }
@@ -31152,24 +31152,30 @@ async function createBranch(github, context, branch, from) {
     const octokit = (0,lib_github.getOctokit)(githubToken());
     let branchExists;
     // Sometimes branch might come in with refs/heads already
-    branch = branch.replace('refs/heads/', '');
+    branch = branch.replace("refs/heads/", "");
     // Check to see if the branch already exists - if it does catch the error and create the branch
     core.debug(`Trying to get branch ${branch} from ${context.repo.owner}/${context.repo.repo}`);
-    const branchResponse = await octokit.rest.repos.getBranch({
+    const branchResponse = await octokit.rest.repos
+        .getBranch({
         ...context.repo,
-        branch
-    }).catch(async (error) => {
+        branch,
+    })
+        .catch(async (error) => {
         // Error was found - this is likely `Error: "HttpError": 404
         core.debug(`Error: "${error.name}": ${error.status} - ${error.errors}`);
-        if (error.name === 'HttpError' && error.status === 404) {
+        if (error.name === "HttpError" && error.status === 404) {
             // Get the latest full SHA of the tag (from)
-            const longSHA = external_child_process_default().execSync('git rev-list -n 1 ' + from).toString().trim();
+            const longSHA = external_child_process_default().execSync("git rev-list -n 1 " + from)
+                .toString()
+                .trim();
             core.debug(`Creating branch ${branch} from ${from} with SHA ${longSHA}`);
-            await octokit.rest.git.createRef({
+            await octokit.rest.git
+                .createRef({
                 ref: `refs/heads/${branch}`,
                 sha: longSHA,
-                ...context.repo
-            }).catch((error) => {
+                ...context.repo,
+            })
+                .catch((error) => {
                 throw error;
             });
         }
@@ -31182,7 +31188,7 @@ async function createBranch(github, context, branch, from) {
 function githubToken() {
     const token = process.env.GITHUB_TOKEN;
     if (!token)
-        throw ReferenceError('No token defined in the environment variables');
+        throw ReferenceError("No token defined in the environment variables");
     return token;
 }
 
