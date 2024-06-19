@@ -31122,10 +31122,6 @@ var __webpack_exports__ = {};
 // ESM COMPAT FLAG
 __nccwpck_require__.r(__webpack_exports__);
 
-// NAMESPACE OBJECT: ./node_modules/@octokit/request-error/dist-src/index.js
-var dist_src_namespaceObject = {};
-__nccwpck_require__.r(dist_src_namespaceObject);
-
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
@@ -31135,48 +31131,7 @@ const external_child_process_namespaceObject = require("child_process");
 var external_child_process_default = /*#__PURE__*/__nccwpck_require__.n(external_child_process_namespaceObject);
 // EXTERNAL MODULE: ./node_modules/@actions/github/lib/utils.js
 var utils = __nccwpck_require__(3030);
-;// CONCATENATED MODULE: ./node_modules/@octokit/request-error/dist-src/index.js
-class RequestError extends Error {
-  name;
-  /**
-   * http status code
-   */
-  status;
-  /**
-   * Request options that lead to the error.
-   */
-  request;
-  /**
-   * Response object if a response was received
-   */
-  response;
-  constructor(message, statusCode, options) {
-    super(message);
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-    this.name = "HttpError";
-    this.status = statusCode;
-    if ("response" in options) {
-      this.response = options.response;
-    }
-    const requestCopy = Object.assign({}, options.request);
-    if (options.request.headers.authorization) {
-      requestCopy.headers = Object.assign({}, options.request.headers, {
-        authorization: options.request.headers.authorization.replace(
-          / .*$/,
-          " [REDACTED]"
-        )
-      });
-    }
-    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
-    this.request = requestCopy;
-  }
-}
-
-
 ;// CONCATENATED MODULE: ./src/run.ts
-
 
 
 
@@ -31190,7 +31145,7 @@ async function run() {
     }
     catch (error) {
         if (error instanceof Error)
-            core.setFailed(error.message);
+            core.setFailed(error);
     }
 }
 async function createBranch(github, context, branch, from) {
@@ -31199,37 +31154,30 @@ async function createBranch(github, context, branch, from) {
     // Sometimes branch might come in with refs/heads already
     branch = branch.replace('refs/heads/', '');
     // Check to see if the branch already exists - if it does catch the error and create the branch
-    try {
-        core.debug(`Trying to get branch ${branch} from ${context.repo.owner}/${context.repo.repo}`);
-        const branchResponse = await octokit.rest.repos.getBranch({
-            ...context.repo,
-            branch
-        });
-        core.debug(`Response: ${branchResponse.status}`);
-        core.debug(`Branch ${branch} data: ${branchResponse.data}`);
-        // If the branch exists we skip the catch block and continue finish this action.
-        branchExists = true;
-    }
-    catch (error) {
-        if (error instanceof dist_src_namespaceObject["default"].RequestError) {
-            // Error was found - this is likely `Error: "HttpError": 404 - Branch not found`
-            core.debug(`Error: "${error.name}": ${error.status} - ${error.message}`);
-            if (error.name == 'HttpError' && error.status == 404) {
-                // Get the latest full SHA of the tag (from)
-                const longSHA = external_child_process_default().execSync('git rev-list -n 1 ' + from).toString().trim();
-                core.debug(`Creating branch ${branch} from ${from} with SHA ${longSHA}`);
-                await octokit.rest.git.createRef({
-                    ref: `refs/heads/${branch}`,
-                    sha: longSHA,
-                    ...context.repo
-                });
-            }
-            else {
-                // If the error is not a 404 HttpError, we throw it
+    core.debug(`Trying to get branch ${branch} from ${context.repo.owner}/${context.repo.repo}`);
+    const branchResponse = await octokit.rest.repos.getBranch({
+        ...context.repo,
+        branch
+    }).catch(async (error) => {
+        // Error was found - this is likely `Error: "HttpError": 404
+        core.debug(`Error: "${error.name}": ${error.status} - ${error.errors}`);
+        if (error.name === 'HttpError' && error.status === 404) {
+            // Get the latest full SHA of the tag (from)
+            const longSHA = external_child_process_default().execSync('git rev-list -n 1 ' + from).toString().trim();
+            core.debug(`Creating branch ${branch} from ${from} with SHA ${longSHA}`);
+            await octokit.rest.git.createRef({
+                ref: `refs/heads/${branch}`,
+                sha: longSHA,
+                ...context.repo
+            }).catch((error) => {
                 throw error;
-            }
+            });
         }
-    }
+        else {
+            // If the error is not a 404 HttpError, we throw it
+            throw error;
+        }
+    });
 }
 function githubToken() {
     const token = process.env.GITHUB_TOKEN;
