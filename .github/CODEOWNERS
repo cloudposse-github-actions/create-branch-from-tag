@@ -4,7 +4,7 @@
 # Order is important: the last matching pattern has the highest precedence
 
 # These owners will be the default owners for everything
-*             @cloudposse-github-actions/engineering @cloudposse-github-actions/engineering/contributors
+*             @cloudposse-github-actions/engineering @cloudposse-github-actions/contributors
 
 # Cloud Posse must review any changes to Makefiles
 **/Makefile   @cloudposse-github-actions/engineering
