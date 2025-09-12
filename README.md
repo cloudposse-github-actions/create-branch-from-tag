@@ -1,10 +1,10 @@
 
 
 <!-- markdownlint-disable -->
-# github-action-typescript-template <a href="https://cpco.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/github-action-typescript-template&utm_content="><img align="right" src="https://cloudposse.com/logo-300x69.svg" width="150" /></a>
+# Create Branch from a Specific Tag <a href="https://cpco.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-github-actions/create-branch-from-tag&utm_content="><img align="right" src="https://cloudposse.com/logo-300x69.svg" width="150" /></a>
 
 
-<a href="https://github.com/cloudposse/github-action-typescript-template/releases/latest"><img src="https://img.shields.io/github/release/cloudposse/github-action-typescript-template.svg" alt="Latest Release"/></a><a href="https://slack.cloudposse.com"><img src="https://slack.cloudposse.com/badge.svg" alt="Slack Community"/></a>
+<a href="https://github.com/cloudposse-github-actions/create-branch-from-tag/releases/latest"><img src="https://img.shields.io/github/release/cloudposse-github-actions/create-branch-from-tag.svg" alt="Latest Release"/></a><a href="https://slack.cloudposse.com"><img src="https://slack.cloudposse.com/badge.svg" alt="Slack Community"/></a>
 
 
 <!-- markdownlint-restore -->
@@ -30,21 +30,101 @@
 
 -->
 
-Template repo for GitHub Actions written in TypeScript
+This action creates a new branch from a specific tag.
 
 
 
 
 ## Introduction
 
-This repo is a template for GitHub Actions written in TypeScript.
+This action creates a new branch from a specific tag.
+
+This is a fork of [satya-500's create a branch from a tag action](https://github.com/satya-500/create-branch-from-tag)
 
 
 
 
 ## Usage
 
-Use this repository as a template in your own GitHub Action project to get started.
+
+create branch from tag
+  ```yaml
+  - name: creating rc branch
+    uses: cloudposse-github-actions/create-branch-from-tag@v1.0
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      branch: release
+      tag: tags/v0.0.7
+  ```
+  
+  create branch from specific ref (branch)
+  ```yaml
+  - name: creating rc branch
+    uses: cloudposse-github-actions/create-branch-from-tag@v1.0
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      branch: release
+      tag: test
+  ```
+
+  Full Job Example (Workflow Dispatch as a shared reusable workflow)
+  ```yaml
+  on:
+    workflow_call:
+      inputs:
+        runs-on:
+          description: "The runner labels on which jobs should run on"
+          required: false
+          type: string
+          default: '["self-hosted"]'
+        organization:
+          description: "Repository owner organization (e.g. 'acme' for repo acme/example)"
+          required: true
+          type: string
+        repository:
+          description: "Repository name (e.g. 'example' for repo acme/example)"
+          required: true
+          type: string
+        tag:
+          description: "The semantic version tag of the release (e.g. 'v1.1.0')"
+          required: true
+          type: string
+      outputs:
+        branch-name:
+          description: "Branch name"
+          value: ${{ jobs.create-branch.outputs.branch-name }}
+  
+  permissions:
+    id-token: write
+    contents: write 
+
+  jobs:
+    create-branch:
+      name: build
+      runs-on: ${{ fromJSON(inputs.runs-on) }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+    
+        - name: Parse Semver
+          id: parse-semver
+          uses: booxmedialtd/ws-action-parse-semver@v1
+          with:
+            input_string: ${{ inputs.tag }}
+  
+        - name: Create Release Branch 
+          uses: cloudposse-github-actions/create-branch-from-tag@main
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            # The following can easily just be 'release/${{ inputs.tag }}', however it is left as is
+            # in case the tag needs to be manipulated. For example:
+            # 'release/${{ steps.parse-semver.outputs.major }}.${{ steps.parse-semver.outputs.minor }}.x'
+            branch: release/${{ steps.parse-semver.outputs.fullversion }}
+            from: tags/${{ inputs.tag }}
+  ```
 
 
 
@@ -56,9 +136,9 @@ Use this repository as a template in your own GitHub Action project to get start
 <!-- markdownlint-disable -->
 | Name | Description | Default | Required |
 |------|-------------|---------|----------|
-| milliseconds | input description here | 200 | true |
+| branch | The branch to create | release | false |
+| from | Provide the tag number ex:- v0.0.7 or branch name i.e develop | N/A | true |
 <!-- markdownlint-restore -->
-
 
 
 
@@ -70,15 +150,6 @@ Check out these related projects.
 
 
 
-## References
-
-For additional context, refer to some of these links.
-
-- [github-actions-workflows](https://github.com/cloudposse/github-actions-workflows) - Reusable workflows for different types of projects
-- [example-github-action-release-workflow](https://github.com/cloudposse/example-github-action-release-workflow) - Example application with complicated release workflow
-
-
-
 
 ## ✨ Contributing
 
@@ -86,16 +157,10 @@ This project is under active development, and we encourage contributions from ou
 
 
 
-Many thanks to our outstanding contributors:
-
-<a href="https://github.com/cloudposse/github-action-typescript-template/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=cloudposse/github-action-typescript-template&max=24" />
-</a>
-
-For 🐛 bug reports & feature requests, please use the [issue tracker](https://github.com/cloudposse/github-action-typescript-template/issues).
+For 🐛 bug reports & feature requests, please use the [issue tracker](https://github.com/cloudposse-github-actions/create-branch-from-tag/issues).
 
 In general, PRs are welcome. We follow the typical "fork-and-pull" Git workflow.
- 1. Review our [Code of Conduct](https://github.com/cloudposse/github-action-typescript-template/?tab=coc-ov-file#code-of-conduct) and [Contributor Guidelines](https://github.com/cloudposse/.github/blob/main/CONTRIBUTING.md).
+ 1. Review our [Code of Conduct](https://github.com/cloudposse-github-actions/create-branch-from-tag/?tab=coc-ov-file#code-of-conduct) and [Contributor Guidelines](https://github.com/cloudposse/.github/blob/main/CONTRIBUTING.md).
  2. **Fork** the repo on GitHub
  3. **Clone** the project to your own machine
  4. **Commit** changes to your own branch
@@ -106,16 +171,16 @@ In general, PRs are welcome. We follow the typical "fork-and-pull" Git workflow.
 
 ### 🌎 Slack Community
 
-Join our [Open Source Community](https://cpco.io/slack?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/github-action-typescript-template&utm_content=slack) on Slack. It's **FREE** for everyone! Our "SweetOps" community is where you get to talk with others who share a similar vision for how to rollout and manage infrastructure. This is the best place to talk shop, ask questions, solicit feedback, and work together as a community to build totally *sweet* infrastructure.
+Join our [Open Source Community](https://cpco.io/slack?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-github-actions/create-branch-from-tag&utm_content=slack) on Slack. It's **FREE** for everyone! Our "SweetOps" community is where you get to talk with others who share a similar vision for how to rollout and manage infrastructure. This is the best place to talk shop, ask questions, solicit feedback, and work together as a community to build totally *sweet* infrastructure.
 
 ### 📰 Newsletter
 
-Sign up for [our newsletter](https://cpco.io/newsletter?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/github-action-typescript-template&utm_content=newsletter) and join 3,000+ DevOps engineers, CTOs, and founders who get insider access to the latest DevOps trends, so you can always stay in the know.
+Sign up for [our newsletter](https://cpco.io/newsletter?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-github-actions/create-branch-from-tag&utm_content=newsletter) and join 3,000+ DevOps engineers, CTOs, and founders who get insider access to the latest DevOps trends, so you can always stay in the know.
 Dropped straight into your Inbox every week — and usually a 5-minute read.
 
-### 📆 Office Hours <a href="https://cloudposse.com/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/github-action-typescript-template&utm_content=office_hours"><img src="https://img.cloudposse.com/fit-in/200x200/https://cloudposse.com/wp-content/uploads/2019/08/Powered-by-Zoom.png" align="right" /></a>
+### 📆 Office Hours <a href="https://cloudposse.com/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-github-actions/create-branch-from-tag&utm_content=office_hours"><img src="https://img.cloudposse.com/fit-in/200x200/https://cloudposse.com/wp-content/uploads/2019/08/Powered-by-Zoom.png" align="right" /></a>
 
-[Join us every Wednesday via Zoom](https://cloudposse.com/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/github-action-typescript-template&utm_content=office_hours) for your weekly dose of insider DevOps trends, AWS news and Terraform insights, all sourced from our SweetOps community, plus a _live Q&A_ that you can’t find anywhere else.
+[Join us every Wednesday via Zoom](https://cloudposse.com/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-github-actions/create-branch-from-tag&utm_content=office_hours) for your weekly dose of insider DevOps trends, AWS news and Terraform insights, all sourced from our SweetOps community, plus a _live Q&A_ that you can’t find anywhere else.
 It's **FREE** for everyone!
 ## License
 
@@ -157,6 +222,6 @@ All other trademarks referenced herein are the property of their respective owne
 Copyright © 2017-2025 [Cloud Posse, LLC](https://cpco.io/copyright)
 
 
-<a href="https://cloudposse.com/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse/github-action-typescript-template&utm_content=readme_footer_link"><img alt="README footer" src="https://cloudposse.com/readme/footer/img"/></a>
+<a href="https://cloudposse.com/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=cloudposse-github-actions/create-branch-from-tag&utm_content=readme_footer_link"><img alt="README footer" src="https://cloudposse.com/readme/footer/img"/></a>
 
-<img alt="Beacon" width="0" src="https://ga-beacon.cloudposse.com/UA-76589703-4/cloudposse/github-action-typescript-template?pixel&cs=github&cm=readme&an=github-action-typescript-template"/>
+<img alt="Beacon" width="0" src="https://ga-beacon.cloudposse.com/UA-76589703-4/cloudposse-github-actions/create-branch-from-tag?pixel&cs=github&cm=readme&an=create-branch-from-tag"/>
